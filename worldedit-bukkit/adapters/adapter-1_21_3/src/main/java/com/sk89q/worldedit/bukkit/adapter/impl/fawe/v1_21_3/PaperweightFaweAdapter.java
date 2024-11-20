@@ -46,6 +46,7 @@ import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypesCache;
 import com.sk89q.worldedit.world.entity.EntityType;
 import com.sk89q.worldedit.world.item.ItemType;
+import com.sk89q.worldedit.world.item.ItemTypes;
 import com.sk89q.worldedit.world.registry.BlockMaterial;
 import io.papermc.lib.PaperLib;
 import net.minecraft.core.BlockPos;
@@ -520,8 +521,12 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
                 registryAccess.createSerializationContext(NbtOps.INSTANCE),
                 nmsStack.getComponentsPatch()
         ).getOrThrow();
+        final ItemType itemType = BukkitAdapter.asItemType(itemStack.getType());
+        if (itemType==null) {
+            return new BaseItemStack(ItemTypes.AIR);
+        }
         return new BaseItemStack(
-                BukkitAdapter.asItemType(itemStack.getType()),
+                itemType,
                 LazyReference.from(() -> (LinCompoundTag) toNativeLin(tag)),
                 itemStack.getAmount()
         );
