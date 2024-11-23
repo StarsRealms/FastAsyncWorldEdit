@@ -219,7 +219,7 @@ public class BlockTypesCache {
                     ? item.substring(0, item.indexOf('['))
                     : item, item -> item));
 
-            int size = blockMap.size() + 1;
+            int size = blockMap.size() + ReservedIDs.class.getDeclaredFields().length + 1;
             BIT_OFFSET = MathMan.log2nlz(size);
             BIT_MASK = ((1 << BIT_OFFSET) - 1);
             values = new BlockType[size];

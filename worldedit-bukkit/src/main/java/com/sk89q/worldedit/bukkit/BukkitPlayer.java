@@ -51,6 +51,7 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.gamemode.GameMode;
 import com.sk89q.worldedit.world.gamemode.GameModes;
+import com.starsrealm.starock.fakeblock.FakeStructBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -60,7 +61,9 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.util.Vector;
 import org.enginehub.linbus.tree.LinCompoundTag;
+import org.enginehub.linbus.tree.LinTagType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -420,24 +423,44 @@ public class BukkitPlayer extends AbstractPlayerActor {
 
     }
 
+    private transient FakeStructBlock cuiBlock;
+
     @Override
     public <B extends BlockStateHolder<B>> void sendFakeBlock(BlockVector3 pos, B block) {
-        Location loc = new Location(player.getWorld(), pos.x(), pos.y(), pos.z());
         if (block == null) {
-            player.sendBlockChange(loc, player.getWorld().getBlockAt(loc).getBlockData());
-        } else {
-            player.sendBlockChange(loc, BukkitAdapter.adapt(block));
-            BukkitImplAdapter adapter = WorldEditPlugin.getInstance().getBukkitImplAdapter();
-            if (adapter != null) {
-                if (block.getBlockType() == BlockTypes.STRUCTURE_BLOCK && block instanceof BaseBlock) {
-                    LinCompoundTag nbt = ((BaseBlock) block).getNbt();
-                    if (nbt != null) {
-                        adapter.sendFakeNBT(player, pos, nbt);
-                        adapter.sendFakeOP(player);
-                    }
-                }
+            if (cuiBlock != null) {
+                cuiBlock.remove(this.player);
+                cuiBlock = null;
             }
+            return;
         }
+
+        final LinCompoundTag blockNbt = block.getNbt();
+        if (blockNbt == null) {
+            if (cuiBlock != null) {
+                cuiBlock.remove(this.player);
+                cuiBlock = null;
+            }
+            return;
+        }
+
+        final LinCompoundTag nbt = block.getNbt();
+        Vector start = new Vector(
+                nbt.getTag("x", LinTagType.intTag()).valueAsInt(),
+                nbt.getTag("y", LinTagType.intTag()).valueAsInt(),
+                nbt.getTag("z", LinTagType.intTag()).valueAsInt()
+        );
+        Vector end = new Vector(
+                nbt.getTag("posX", LinTagType.intTag()).valueAsInt(),
+                nbt.getTag("posY", LinTagType.intTag()).valueAsInt(),
+                nbt.getTag("posZ", LinTagType.intTag()).valueAsInt()
+        );
+        if (cuiBlock != null) {
+            cuiBlock.remove(this.player);
+            cuiBlock = null;
+        }
+        cuiBlock = new FakeStructBlock();
+        cuiBlock.create(start, end, this.player);
     }
 
     //FAWE start

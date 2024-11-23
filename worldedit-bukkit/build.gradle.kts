@@ -13,6 +13,15 @@ applyPlatformAndCoreConfiguration()
 applyShadowConfiguration()
 
 repositories {
+    mavenLocal()
+    maven {
+        name = "AliYun-Snapshot"
+        url = uri("https://packages.aliyun.com/maven/repository/2421751-snapshot-i7Aufp/")
+        credentials {
+            username = project.findProperty("aliyun.package.user") as String? ?: System.getenv("ALY_USER")
+            password = project.findProperty("aliyun.package.password") as String? ?: System.getenv("ALY_PASSWORD")
+        }
+    }
     maven {
         name = "PaperMC"
         url = uri("https://repo.papermc.io/repository/maven-public/")
@@ -122,6 +131,8 @@ dependencies {
     api(libs.parallelgzip) { isTransitive = false }
     compileOnly(libs.adventureApi)
     compileOnlyApi(libs.checkerqual)
+    compileOnly("com.starsrealm.starock:api:1.6.1-SNAPSHOT")
+    compileOnly("com.starsrealm.starock:plugin:1.6.1-SNAPSHOT")
 
     // Tests
     testImplementation(libs.mockito)

@@ -46,10 +46,11 @@ public class ServerCUIHandler {
     }
 
     public static int getMaxServerCuiSize() {
-        int dataVersion = WorldEdit.getInstance().getPlatformManager().queryCapability(Capability.GAME_HOOKS).getDataVersion();
-
-        // 1.16 increased maxSize to 48.
-        return dataVersion >= 2566 ? 48 : 32;
+//        int dataVersion = WorldEdit.getInstance().getPlatformManager().queryCapability(Capability.GAME_HOOKS).getDataVersion();
+//
+//        // 1.16 increased maxSize to 48.
+//        return dataVersion >= 2566 ? 48 : 32;
+        return Integer.MAX_VALUE;
     }
 
     /**
@@ -123,37 +124,16 @@ public class ServerCUIHandler {
             return null;
         }
 
-        // Borrowed this math from FAWE
-        final Location location = player.getLocation();
-        double rotX = location.getYaw();
-        double rotY = location.getPitch();
-        double xz = Math.cos(Math.toRadians(rotY));
-        int x = (int) (location.x() - (-xz * Math.sin(Math.toRadians(rotX))) * 12);
-        int z = (int) (location.z() - (xz * Math.cos(Math.toRadians(rotX))) * 12);
-        int y = Math.max(
-                player.getWorld().getMinY(),
-                Math.min(Math.min(player.getWorld().getMaxY(), posY + MAX_DISTANCE), posY + 3)
-        );
-
-        posX -= x;
-        posY -= y;
-        posZ -= z;
-
-        if (Math.abs(posX) > MAX_DISTANCE || Math.abs(posY) > MAX_DISTANCE || Math.abs(posZ) > MAX_DISTANCE) {
-            // Structure blocks have a limit
-            return null;
-        }
-
         LinCompoundTag.Builder structureTag = LinCompoundTag.builder();
         structureTag.putString("name", "worldedit:" + player.getName());
         structureTag.putString("author", player.getName());
         structureTag.putString("metadata", "");
-        structureTag.putInt("x", x);
-        structureTag.putInt("y", y);
-        structureTag.putInt("z", z);
-        structureTag.putInt("posX", posX);
-        structureTag.putInt("posY", posY);
-        structureTag.putInt("posZ", posZ);
+        structureTag.putInt("x", posX);
+        structureTag.putInt("y", posY);
+        structureTag.putInt("z", posZ);
+        structureTag.putInt("posX", posX + width - 1);
+        structureTag.putInt("posY", posY + height - 1);
+        structureTag.putInt("posZ", posZ + length - 1);
         structureTag.putInt("sizeX", width);
         structureTag.putInt("sizeY", height);
         structureTag.putInt("sizeZ", length);

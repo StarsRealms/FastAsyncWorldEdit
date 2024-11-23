@@ -170,7 +170,7 @@ public class LocalSession implements TextureHolder {
     private transient UUID uuid;
     private transient volatile long historySize = 0;
 
-    private transient BlockVector3 cuiTemporaryBlock;
+    private transient BaseBlock cuiTemporaryBlock;
     @SuppressWarnings("unused")
     private final transient EditSession.ReorderMode reorderMode = EditSession.ReorderMode.MULTI_STAGE;
     private transient List<Countable<BlockState>> lastDistribution;
@@ -1506,32 +1506,27 @@ public class LocalSession implements TextureHolder {
 
         if (!useServerCUI || hasCUISupport) {
             if (cuiTemporaryBlock != null) {
-                player.sendFakeBlock(cuiTemporaryBlock, null);
                 cuiTemporaryBlock = null;
+                player.sendFakeBlock(null, null);
             }
             return; // If it's not enabled, ignore this.
         }
 
         BaseBlock block = ServerCUIHandler.createStructureBlock(player);
         if (block != null) {
-            LinCompoundTag tags = Objects.requireNonNull(
-                block.getNbt(), "createStructureBlock should return nbt"
-            );
-            BlockVector3 tempCuiTemporaryBlock = BlockVector3.at(
-                tags.getTag("x", LinTagType.intTag()).valueAsInt(),
-                tags.getTag("y", LinTagType.intTag()).valueAsInt(),
-                tags.getTag("z", LinTagType.intTag()).valueAsInt()
-            );
-            // If it's null, we don't need to do anything. The old was already removed.
-            if (cuiTemporaryBlock != null && !tempCuiTemporaryBlock.equals(cuiTemporaryBlock)) {
-                // Update the existing block if it's the same location
-                player.sendFakeBlock(cuiTemporaryBlock, null);
+            if (cuiTemporaryBlock != null) {
+                if(!block.equals(cuiTemporaryBlock)){
+                    player.sendFakeBlock(null, null);
+                    cuiTemporaryBlock = block;
+                    player.sendFakeBlock(null, cuiTemporaryBlock);
+                }
+            } else {
+                cuiTemporaryBlock = block;
+                player.sendFakeBlock(null, cuiTemporaryBlock);
             }
-            cuiTemporaryBlock = tempCuiTemporaryBlock;
-            player.sendFakeBlock(cuiTemporaryBlock, block);
         } else if (cuiTemporaryBlock != null) {
             // Remove the old block
-            player.sendFakeBlock(cuiTemporaryBlock, null);
+            player.sendFakeBlock(null, null);
             cuiTemporaryBlock = null;
         }
     }
