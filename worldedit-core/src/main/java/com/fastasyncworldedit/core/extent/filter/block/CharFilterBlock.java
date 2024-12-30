@@ -37,14 +37,14 @@ public class CharFilterBlock extends ChunkFilterBlock {
 
     private int maxLayer;
     private int minLayer;
-    private CharGetBlocks get;
-    private IChunkSet set;
+    protected CharGetBlocks get;
+    protected IChunkSet set;
     protected char[] getArr;
     @Nullable
     protected char[] setArr;
     protected SetDelegate delegate;
     // local
-    private int layer;
+    protected int layer;
     private int index;
     private int x;
     private int y;
@@ -407,6 +407,11 @@ public class CharFilterBlock extends ChunkFilterBlock {
             return get.getBiomeType(x & 15, y, z & 15);
         }
         return getExtent().getBiomeType(x, y, z);
+    }
+
+    @Override
+    public BiomeType getBiome(final BlockVector3 position) {
+        return this.getBiomeType(position.x(), position.y(), position.z());
     }
 
     @Override

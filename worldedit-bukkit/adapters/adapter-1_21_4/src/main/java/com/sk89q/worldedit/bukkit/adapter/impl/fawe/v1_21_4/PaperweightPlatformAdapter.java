@@ -24,7 +24,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.IdMap;
 import net.minecraft.core.Registry;
-import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
@@ -80,7 +79,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import static java.lang.invoke.MethodType.methodType;
 import static net.minecraft.core.registries.Registries.BIOME;
@@ -150,10 +149,12 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
             fieldBiomes = tmpFieldBiomes;
             fieldBiomes.setAccessible(true);
 
-            Method getVisibleChunkIfPresent = ChunkMap.class.getDeclaredMethod(Refraction.pickName(
-                    "getVisibleChunkIfPresent",
-                    "b"
-            ), long.class);
+            Method getVisibleChunkIfPresent = ChunkMap.class.getDeclaredMethod(
+                    Refraction.pickName(
+                            "getVisibleChunkIfPresent",
+                            "b"
+                    ), long.class
+            );
             getVisibleChunkIfPresent.setAccessible(true);
             methodGetVisibleChunk = lookup.unreflect(getVisibleChunkIfPresent);
 
@@ -354,14 +355,11 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
         MinecraftServer.getServer().execute(() -> {
             try {
                 ChunkPos pos = levelChunk.getPos();
-                // NOTE: the ClientboundForgetLevelChunkPacket packet is required on 1.21.3
-                // as the client won't update empty -> non-empty sections properly otherwise
-                ClientboundForgetLevelChunkPacket forget = new ClientboundForgetLevelChunkPacket(pos);
                 ClientboundLevelChunkWithLightPacket packet;
                 if (PaperLib.isPaper()) {
                     packet = new ClientboundLevelChunkWithLightPacket(
                             levelChunk,
-                            nmsWorld.getChunkSource().getLightEngine(),
+                            nmsWorld.getLightEngine(),
                             null,
                             null,
                             false // last false is to not bother with x-ray
@@ -370,15 +368,12 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
                     // deprecated on paper - deprecation suppressed
                     packet = new ClientboundLevelChunkWithLightPacket(
                             levelChunk,
-                            nmsWorld.getChunkSource().getLightEngine(),
+                            nmsWorld.getLightEngine(),
                             null,
                             null
                     );
                 }
-                nearbyPlayers(nmsWorld, pos).forEach(p -> {
-                    p.connection.send(forget);
-                    p.connection.send(packet);
-                });
+                nearbyPlayers(nmsWorld, pos).forEach(p -> p.connection.send(packet));
             } finally {
                 NMSAdapter.endChunkPacketSend(nmsWorld.getWorld().getName(), pair, lockHolder);
             }
@@ -404,7 +399,7 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
 
     public static LevelChunkSection newChunkSection(
             final int layer,
-            final Function<Integer, char[]> get,
+            final IntFunction<char[]> get,
             char[] set,
             CachedBukkitAdapter adapter,
             Registry<Biome> biomeRegistry,
@@ -420,9 +415,9 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
         try {
             int num_palette;
             if (get == null) {
-                num_palette = createPalette(blockToPalette, paletteToBlock, blocksCopy, set, adapter, null);
+                num_palette = createPalette(blockToPalette, paletteToBlock, blocksCopy, set, adapter);
             } else {
-                num_palette = createPalette(layer, blockToPalette, paletteToBlock, blocksCopy, get, set, adapter, null);
+                num_palette = createPalette(layer, blockToPalette, paletteToBlock, blocksCopy, get, set, adapter);
             }
 
             int bitsPerEntry = MathMan.log2nlz(num_palette - 1);
