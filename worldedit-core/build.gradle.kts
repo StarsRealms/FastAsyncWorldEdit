@@ -9,6 +9,13 @@ project.description = "Core"
 
 applyPlatformAndCoreConfiguration()
 
+repositories{
+    maven {
+        name = "EngineHub"
+        url = uri("https://maven.enginehub.org/repo/")
+    }
+}
+
 dependencies {
     constraints {
         implementation(libs.snakeyaml) {

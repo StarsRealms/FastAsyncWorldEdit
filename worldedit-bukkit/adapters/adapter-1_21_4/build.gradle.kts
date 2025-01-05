@@ -8,6 +8,14 @@ applyPaperweightAdapterConfiguration()
 
 repositories {
     gradlePluginPortal()
+    maven {
+        name = "PaperMC"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
+    maven {
+        name = "EngineHub"
+        url = uri("https://maven.enginehub.org/repo/")
+    }
 }
 
 dependencies {

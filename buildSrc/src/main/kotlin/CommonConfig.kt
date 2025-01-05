@@ -12,10 +12,6 @@ fun Project.applyCommonConfiguration() {
     repositories {
         mavenCentral()
         maven {
-            name = "EngineHub"
-            url = uri("https://maven.enginehub.org/repo/")
-        }
-        maven {
             name = "OSS Sonatype Snapshots"
             url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
         }
