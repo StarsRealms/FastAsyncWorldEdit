@@ -4,8 +4,11 @@ import com.fastasyncworldedit.core.extent.filter.block.ChunkFilterBlock;
 import com.fastasyncworldedit.core.extent.processor.heightmap.HeightMapType;
 import com.fastasyncworldedit.core.nbt.FaweCompoundTag;
 import com.fastasyncworldedit.core.queue.Filter;
+import com.fastasyncworldedit.core.queue.IChunk;
 import com.fastasyncworldedit.core.queue.IChunkSet;
 import com.fastasyncworldedit.core.queue.IQueueChunk;
+import com.fastasyncworldedit.core.queue.IQueueExtent;
+import com.sk89q.worldedit.entity.Entity;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.util.SideEffectSet;
@@ -199,6 +202,11 @@ public final class NullChunk implements IQueueChunk {
     }
 
     @Override
+    public Set<Entity> getFullEntities() {
+        return Collections.emptySet();
+    }
+
+    @Override
     public boolean isCreateCopy() {
         return false;
     }
@@ -236,7 +244,7 @@ public final class NullChunk implements IQueueChunk {
     }
 
     @Nullable
-    public <T extends Future<T>> T call(@Nullable IChunkSet set, @Nullable Runnable finalize) {
+    public <T extends Future<T>> T call(IQueueExtent<? extends IChunk> owner, @Nullable IChunkSet set, @Nullable Runnable finalize) {
         return null;
     }
 

@@ -3,8 +3,10 @@ package com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_21_3;
 import com.fastasyncworldedit.core.extent.processor.heightmap.HeightMapType;
 import com.fastasyncworldedit.core.nbt.FaweCompoundTag;
 import com.fastasyncworldedit.core.queue.IBlocks;
+import com.fastasyncworldedit.core.queue.IChunk;
 import com.fastasyncworldedit.core.queue.IChunkGet;
 import com.fastasyncworldedit.core.queue.IChunkSet;
+import com.fastasyncworldedit.core.queue.IQueueExtent;
 import com.fastasyncworldedit.core.util.NbtUtils;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.bukkit.adapter.BukkitImplAdapter;
@@ -47,6 +49,8 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
     private final char[][] blocks;
     private final int minHeight;
     private final int maxHeight;
+    private final int chunkX;
+    private final int chunkZ;
     final ServerLevel serverLevel;
     final LevelChunk levelChunk;
     private Holder<Biome>[][] biomes = null;
@@ -57,6 +61,8 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
         this.minHeight = serverLevel.getMinY();
         this.maxHeight = serverLevel.getMaxY() - 1; // Minecraft max limit is exclusive.
         this.blocks = new char[getSectionCount()][];
+        this.chunkX = levelChunk.getPos().x;
+        this.chunkZ = levelChunk.getPos().z;
     }
 
     protected void storeTile(BlockEntity blockEntity) {
@@ -85,6 +91,11 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
     @Override
     public Collection<FaweCompoundTag> entities() {
         return this.entities;
+    }
+
+    @Override
+    public Set<com.sk89q.worldedit.entity.Entity> getFullEntities() {
+        throw new UnsupportedOperationException("Cannot get full entities from GET copy.");
     }
 
     @Override
@@ -137,6 +148,16 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
     @Override
     public int getMinSectionPosition() {
         return minHeight >> 4;
+    }
+
+    @Override
+    public int getX() {
+        return chunkX;
+    }
+
+    @Override
+    public int getZ() {
+        return chunkZ;
     }
 
     @Override
@@ -257,7 +278,7 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
     }
 
     @Override
-    public <T extends Future<T>> T call(IChunkSet set, Runnable finalize) {
+    public <T extends Future<T>> T call(IQueueExtent<? extends IChunk> owner, IChunkSet set, Runnable finalize) {
         return null;
     }
 

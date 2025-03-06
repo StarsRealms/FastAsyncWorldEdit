@@ -9,6 +9,8 @@ import com.sk89q.worldedit.world.block.BlockTypesCache;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.lang.invoke.VarHandle;
+import java.util.Arrays;
 
 public abstract class CharBlocks implements IBlocks {
 
@@ -20,7 +22,10 @@ public abstract class CharBlocks implements IBlocks {
             char[] arr = blocks.blocks[layer];
             if (arr == null) {
                 // Chunk probably trimmed mid-operations, but do nothing about it to avoid other issues
-                return EMPTY.get(blocks, layer, false);
+                synchronized (blocks.sectionLocks[layer]) {
+                    LOGGER.warn("Unexpected null section, please report this occurence alongside a debugpaste.");
+                    return getSkipFull(blocks, layer, false);
+                }
             }
             return arr;
         }
@@ -32,6 +37,7 @@ public abstract class CharBlocks implements IBlocks {
             if (arr == null) {
                 // Chunk probably trimmed mid-operations, but do nothing about it to avoid other issues
                 synchronized (blocks.sectionLocks[layer]) {
+                    LOGGER.warn("Unexpected null section, please report this occurence alongside a debugpaste.");
                     return getSkipFull(blocks, layer, aggressive);
                 }
             }
@@ -71,6 +77,8 @@ public abstract class CharBlocks implements IBlocks {
     protected int minSectionPosition;
     protected int maxSectionPosition;
     protected int sectionCount;
+    private int chunkX;
+    private int chunkZ;
 
     /**
      * New instance given initial min/max section indices. Can be negative.
@@ -86,6 +94,11 @@ public abstract class CharBlocks implements IBlocks {
             sections[i] = EMPTY;
             sectionLocks[i] = new Object();
         }
+    }
+
+    public void init(int chunkX, int chunkZ) {
+        this.chunkX = chunkX;
+        this.chunkZ = chunkZ;
     }
 
     @Override
@@ -118,6 +131,7 @@ public abstract class CharBlocks implements IBlocks {
     public synchronized IChunkSet reset() {
         for (int i = 0; i < sectionCount; i++) {
             sections[i] = EMPTY;
+            VarHandle.storeStoreFence();
             blocks[i] = null;
         }
         return null;
@@ -134,10 +148,20 @@ public abstract class CharBlocks implements IBlocks {
         if (data == null) {
             return new char[4096];
         }
-        for (int i = 0; i < 4096; i++) {
-            data[i] = defaultOrdinal();
-        }
+        Arrays.fill(data, defaultOrdinal());
         return data;
+    }
+
+    protected char[] loadPrivately(int layer) {
+        layer -= getMinSectionPosition();
+        if (sections[layer] != null) {
+            synchronized (sectionLocks[layer]) {
+                if (sections[layer].isFull() && blocks[layer] != null) {
+                    return blocks[layer];
+                }
+            }
+        }
+        return update(layer, null, true);
     }
 
     // Not synchronized as any subsequent methods called from this class will be, or the section shouldn't appear as loaded anyway.
@@ -192,6 +216,16 @@ public abstract class CharBlocks implements IBlocks {
             return defaultOrdinal();
         }
         return get(layer, index);
+    }
+
+    @Override
+    public int getX() {
+        return chunkX;
+    }
+
+    @Override
+    public int getZ() {
+        return chunkZ;
     }
 
     /**

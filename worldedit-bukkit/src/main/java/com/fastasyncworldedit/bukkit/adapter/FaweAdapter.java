@@ -13,6 +13,7 @@ import org.bukkit.TreeType;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -73,6 +74,25 @@ public abstract class FaweAdapter<TAG, SERVER_LEVEL> extends CachedBukkitAdapter
         }
         return true;
     }
+
+    public void mapFromGlobalPalette(char[] data) {
+        assert data.length == 4096;
+        ensureInit();
+        for (int i = 0; i < 4096; i++) {
+            data[i] = (char) this.ibdToOrdinal[data[i]];
+        }
+    }
+
+    public void mapWithPalette(char[] data, char[] paletteToOrdinal) {
+        for (int i = 0; i < 4096; i++) {
+            char paletteVal = data[i];
+            char val = paletteToOrdinal[paletteVal];
+            assert val != Character.MAX_VALUE; // paletteToOrdinal should prevent that
+            data[i] = val;
+        }
+    }
+
+    protected abstract void ensureInit();
 
     protected abstract void preCaptureStates(SERVER_LEVEL serverLevel);
 

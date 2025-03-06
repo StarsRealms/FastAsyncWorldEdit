@@ -57,6 +57,12 @@ public class Settings extends Config {
             " - Disable with 100 or -1."
     })
     public int MAX_MEMORY_PERCENT = 95;
+    @Comment({
+            "When percent memory usage reaches this threshold some aspects of editing will be slowed down:",
+            " - FAWE-Asynchronous chunk loading when writing changes (see queue.async-chunk-load-write)"
+    })
+    public int SLOWER_MEMORY_PERCENT = 80;
+
     @Create
     public ENABLED_COMPONENTS ENABLED_COMPONENTS;
     @Create
@@ -283,8 +289,18 @@ public class Settings extends Config {
         @Comment({"Show additional information in console. It helps us at IntellectualSites to find out more about an issue.",
                 "Leave it off if you don't need it, it can spam your console."})
         public boolean DEBUG = false;
-        @Comment({"Whether or not FAWE should notify you on startup about new versions available."})
-        public boolean UPDATE_NOTIFICATIONS = true;
+
+        @Migrate("enabled-components.update-notification")
+        @Comment({"Whether or not FAWE should notify you on startup about new available snapshots."})
+        public boolean SNAPSHOT_UPDATE_NOTIFICATIONS = true;
+
+        @Migrate("enabled-components.update-notification")
+        @Comment({"Whether or not FAWE should notify you on startup about new releases."})
+        public boolean RELEASE_UPDATE_NOTIFICATIONS = true;
+
+        @Migrate("enabled-components.update-notification")
+        @Comment({"Whether or not FAWE should notify you for updates (snapshot / release) on join (with the required permission)"})
+        public boolean NOTIFY_UPDATE_INGAME = true;
 
     }
 
@@ -599,6 +615,24 @@ public class Settings extends Config {
         })
         public boolean POOL = true;
 
+        @Comment({
+                "If chunk loading for writing edits to the world should be performed asynchronously to FAWE",
+                " - Enable to improve performance at the expense of memory",
+                " - If experience out of memory crashed, disable this or reduce slower-memory-percent"
+        })
+        public boolean ASYNC_CHUNK_LOAD_WRITE = true;
+
+        @Comment({
+                "Percentage of queue.target-size to use per thread in multi-threaded operations",
+                " - Minimum of 100 / queue.parallel-threads (queue.target-size split across threads)",
+                " - Maximum of 100 (queue.target-size per thread)",
+                " - Higher performance at the expense of memory",
+                " - I.e. target-size=400, parallel-threads=8 and threads-target-size=25 means target-size of 100 per thread",
+                " - Defaults to 100 * 2 / parallel-threads"
+        })
+        @ComputedFrom(node = "queue.parallel-threads", computer = ConfigOptComputation.THREAD_TARGET_SIZE_COMPUTATION.class)
+        public int THREAD_TARGET_SIZE_PERCENT = 100 * 2 / Runtime.getRuntime().availableProcessors();
+
         public static class PROGRESS {
 
             @Comment({"Display constant titles about the progress of a user's edit",
@@ -664,6 +698,13 @@ public class Settings extends Config {
                 " - If an entity cannot be removed, it is possible duplicate entities may be created when using undo and/or redo"
         })
         public boolean REMOVE_ENTITY_FROM_WORLD_ON_CHUNK_FAIL = true;
+
+        @Comment({
+                "[SAFE] Perform operations involving entities on chunk load",
+                " - Allows entities that might not otherwise be captured due to unloaded chunks to be captured",
+                " - Main use-case is copying larger areas with entities"
+        })
+        public boolean IMPROVED_ENTITY_EDITS = true;
 
         @Comment({
                 "Increased debug logging for brush actions and processor setup"

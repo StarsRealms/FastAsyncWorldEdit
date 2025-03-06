@@ -10,8 +10,9 @@ import com.fastasyncworldedit.core.queue.IChunkGet;
 import com.fastasyncworldedit.core.queue.IChunkSet;
 import com.fastasyncworldedit.core.queue.IQueueChunk;
 import com.fastasyncworldedit.core.queue.IQueueExtent;
-import com.fastasyncworldedit.core.queue.implementation.ParallelQueueExtent;
 import com.fastasyncworldedit.core.util.MemUtil;
+import com.sk89q.worldedit.entity.Entity;
+import com.fastasyncworldedit.core.util.task.FaweThread;
 import com.sk89q.worldedit.internal.util.LogManagerCompat;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
@@ -1010,7 +1011,8 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
     public synchronized T call() {
         if (chunkSet != null && !chunkSet.isEmpty()) {
             IChunkSet copy = chunkSet.createCopy();
-            return this.call(copy, () -> {
+
+            return this.call(extent, copy, () -> {
                 // Do nothing
             });
         }
@@ -1020,8 +1022,9 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
     /**
      * This method should never be called from outside ChunkHolder
      */
+
     @Override
-    public synchronized T call(IChunkSet set, Runnable finalize) {
+    public <U extends Future<U>> U call(IQueueExtent<? extends IChunk> owner, IChunkSet set, Runnable finalize) {
         if (set != null) {
             IChunkGet get = getOrCreateGet();
             try {
@@ -1039,7 +1042,7 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
                 } else {
                     finalizer = finalize;
                 }
-                return get.call(set, finalizer);
+                return get.call(extent, set, finalizer);
             } finally {
                 get.unlockCall();
                 untrackExtent();
@@ -1053,11 +1056,11 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
     // This way, locking is spread across multiple STQEs, allowing for better performance
 
     private void trackExtent() {
-            ParallelQueueExtent.setCurrentExtent(extent);
+        FaweThread.setCurrentExtent(extent);
     }
 
     private void untrackExtent() {
-        ParallelQueueExtent.clearCurrentExtent();
+        FaweThread.clearCurrentExtent();
     }
 
     /**
@@ -1110,6 +1113,11 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
     @Override
     public Collection<FaweCompoundTag> entities() {
         return delegate.get(this).entities();
+    }
+
+    @Override
+    public Set<Entity> getFullEntities() {
+        return delegate.get(this).getFullEntities();
     }
 
     @Override
