@@ -83,8 +83,6 @@ import com.sk89q.worldedit.world.item.ItemType;
 import com.sk89q.worldedit.world.snapshot.experimental.Snapshot;
 import com.zaxxer.sparsebits.SparseBitSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import org.enginehub.linbus.tree.LinCompoundTag;
-import org.enginehub.linbus.tree.LinTagType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -98,7 +96,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Objects;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;

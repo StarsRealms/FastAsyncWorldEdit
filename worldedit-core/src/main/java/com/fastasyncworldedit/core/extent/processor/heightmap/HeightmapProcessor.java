@@ -18,7 +18,7 @@ public class HeightmapProcessor implements IBatchProcessor {
     private static final HeightMapType[] TYPES = HeightMapType.values();
     private static final int BLOCKS_PER_Y_SHIFT = 8; // log2(256)
     private static final int BLOCKS_PER_Y = 256; // 16 x 16
-    private static final char[] AIR_LAYER = new char[4096];
+    private static final int[] AIR_LAYER = new int[4096];
     private static final int NEEDED_UPDATES = TYPES.length * BLOCKS_PER_Y;
 
     static {
@@ -57,19 +57,19 @@ public class HeightmapProcessor implements IBatchProcessor {
             if (!(hasSectionSet || hasSectionGet)) {
                 continue;
             }
-            char[] setSection = hasSectionSet ? set.loadIfPresent(layer) : null;
-            if (setSection == null || Arrays.equals(setSection, FaweCache.INSTANCE.EMPTY_CHAR_4096) ||
+            int[] setSection = hasSectionSet ? set.loadIfPresent(layer) : null;
+            if (setSection == null || Arrays.equals(setSection, FaweCache.INSTANCE.EMPTY_INT_4096) ||
                     Arrays.equals(setSection, AIR_LAYER)) {
                 hasSectionSet = false;
             }
             if (!hasSectionSet && !hasSectionGet) {
                 continue;
             }
-            char[] getSection = null;
+            int[] getSection = null;
             for (int y = 15; y >= 0; y--) {
                 // We don't need to actually iterate over x and z as we're both reading and writing an index
                 for (int j = 0; j < BLOCKS_PER_Y; j++) {
-                    char ordinal = BlockTypesCache.ReservedIDs.__RESERVED__;
+                    int ordinal = BlockTypesCache.ReservedIDs.__RESERVED__;
                     if (hasSectionSet) {
                         ordinal = setSection[index(y, j)];
                     }
@@ -82,7 +82,7 @@ public class HeightmapProcessor implements IBatchProcessor {
                         } else if (getSection == null) {
                             getSection = get.load(layer);
                             // skip empty layer
-                            if (Arrays.equals(getSection, FaweCache.INSTANCE.EMPTY_CHAR_4096)
+                            if (Arrays.equals(getSection, FaweCache.INSTANCE.EMPTY_INT_4096)
                                     || Arrays.equals(getSection, AIR_LAYER)) {
                                 hasSectionGet = false;
                                 if (!hasSectionSet) {

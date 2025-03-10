@@ -8,7 +8,7 @@ import com.fastasyncworldedit.core.queue.IBlocks;
 import com.fastasyncworldedit.core.queue.IChunkGet;
 import com.fastasyncworldedit.core.queue.IChunkSet;
 import com.fastasyncworldedit.core.queue.implementation.Flood;
-import com.fastasyncworldedit.core.queue.implementation.blocks.CharGetBlocks;
+import com.fastasyncworldedit.core.queue.implementation.blocks.IntGetBlocks;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -37,11 +37,11 @@ public class CharFilterBlock extends ChunkFilterBlock {
 
     private int maxLayer;
     private int minLayer;
-    protected CharGetBlocks get;
+    protected IntGetBlocks get;
     protected IChunkSet set;
-    protected char[] getArr;
+    protected int[] getArr;
     @Nullable
-    protected char[] setArr;
+    protected int[] setArr;
     protected SetDelegate delegate;
     // local
     protected int layer;
@@ -70,12 +70,12 @@ public class CharFilterBlock extends ChunkFilterBlock {
 
     @Override
     public synchronized final ChunkFilterBlock initLayer(IBlocks iget, IChunkSet iset, int layer) {
-        this.get = (CharGetBlocks) iget;
+        this.get = (IntGetBlocks) iget;
         minLayer = this.get.getMinSectionPosition();
         maxLayer = this.get.getMaxSectionPosition();
         this.layer = layer;
         if (!iget.hasSection(layer)) {
-            getArr = FaweCache.INSTANCE.EMPTY_CHAR_4096;
+            getArr = FaweCache.INSTANCE.EMPTY_INT_4096;
         } else {
             getArr = iget.load(layer);
         }
@@ -233,10 +233,6 @@ public class CharFilterBlock extends ChunkFilterBlock {
         return chunkZ;
     }
 
-    public final char getOrdinalChar() {
-        return getArr[index];
-    }
-
     @Override
     public final int getOrdinal() {
         return getArr[index];
@@ -244,7 +240,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
 
     @Override
     public void setOrdinal(int ordinal) {
-        delegate.set(this, (char) ordinal);
+        delegate.set(this, ordinal);
     }
 
     @Override
@@ -255,7 +251,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
 
     @Override
     public void setBlock(BlockState state) {
-        delegate.set(this, state.getOrdinalChar());
+        delegate.set(this, state.getOrdinal());
     }
 
     @Override
@@ -271,7 +267,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
 
     @Override
     public void setFullBlock(BaseBlock block) {
-        delegate.set(this, block.getOrdinalChar());
+        delegate.set(this, block.getOrdinal());
         final LazyReference<LinCompoundTag> nbt = block.getNbtReference();
         if (nbt != null) { // TODO optimize check via ImmutableBaseBlock
             set.tile(x, yy + y, z, FaweCompoundTag.of(nbt));
@@ -354,7 +350,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
         }
         if (layer > minLayer) {
             final int newLayer = layer - 1;
-            final CharGetBlocks chunk = this.get;
+            final IntGetBlocks chunk = this.get;
             return states[chunk.sections[newLayer].get(chunk, newLayer, index + 3840)];
         }
         return BlockTypes.__RESERVED__.getDefaultState();
@@ -367,7 +363,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
         }
         if (layer < maxLayer) {
             final int newLayer = layer + 1;
-            final CharGetBlocks chunk = this.get;
+            final IntGetBlocks chunk = this.get;
             return states[chunk.sections[newLayer].get(chunk, newLayer, index - 3840)];
         }
         return BlockTypes.__RESERVED__.getDefaultState();
@@ -385,14 +381,6 @@ public class CharFilterBlock extends ChunkFilterBlock {
             return states[get.sections[newLayer].get(get, newLayer, index)];
         }
         return BlockTypes.__RESERVED__.getDefaultState();
-    }
-
-    /*
-    Extent
-     */
-    @Override
-    public char getOrdinalChar(Extent orDefault) {
-        return getOrdinalChar();
     }
 
     //Set delegate
@@ -436,7 +424,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
     @ApiStatus.Internal
     protected interface SetDelegate {
 
-        void set(@Nonnull CharFilterBlock block, char value);
+        void set(@Nonnull CharFilterBlock block, int value);
 
     }
 

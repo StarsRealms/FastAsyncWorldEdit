@@ -21,15 +21,15 @@ class IBatchProcessorTest {
     @Isolated
     class trimY {
 
-        private static final char[] CHUNK_DATA = new char[16 * 16 * 16];
-        private static final char[] SLICE_AIR = new char[16 * 16];
-        private static final char[] SLICE_RESERVED = new char[16 * 16];
+        private static final int[] CHUNK_DATA = new int[16 * 16 * 16];
+        private static final int[] SLICE_AIR = new int[16 * 16];
+        private static final int[] SLICE_RESERVED = new int[16 * 16];
         private final IBatchProcessor processor = new NoopBatchProcessor();
 
         static {
-            Arrays.fill(CHUNK_DATA, (char) BlockTypesCache.ReservedIDs.AIR);
-            Arrays.fill(SLICE_AIR, (char) BlockTypesCache.ReservedIDs.AIR);
-            Arrays.fill(SLICE_RESERVED, (char) BlockTypesCache.ReservedIDs.__RESERVED__);
+            Arrays.fill(CHUNK_DATA, (int) BlockTypesCache.ReservedIDs.AIR);
+            Arrays.fill(SLICE_AIR, (int) BlockTypesCache.ReservedIDs.AIR);
+            Arrays.fill(SLICE_RESERVED, (int) BlockTypesCache.ReservedIDs.__RESERVED__);
         }
 
         @ParameterizedTest
@@ -37,8 +37,8 @@ class IBatchProcessorTest {
         void testFullChunkSelectedInBoundedRegion(int minY, int maxY, int minSection, int maxSection) {
             final IChunkSet set = mock();
 
-            char[][] sections = new char[(320 + 64) >> 4][CHUNK_DATA.length];
-            for (final char[] chars : sections) {
+            int[][] sections = new int[(320 + 64) >> 4][CHUNK_DATA.length];
+            for (final int[] chars : sections) {
                 System.arraycopy(CHUNK_DATA, 0, chars, 0, CHUNK_DATA.length);
             }
 
@@ -56,7 +56,7 @@ class IBatchProcessorTest {
 
             for (int section = -64 >> 4; section < 320 >> 4; section++) {
                 int sectionIndex = section + 4;
-                char[] palette = sections[sectionIndex];
+                int[] palette = sections[sectionIndex];
                 if (section < minSection) {
                     assertNull(palette, "expected section below minimum section to be null");
                     continue;

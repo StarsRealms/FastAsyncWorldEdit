@@ -111,18 +111,18 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
     }
 
     @Override
-    public void setBlocks(int layer, char[] data) {
+    public void setBlocks(int layer, int[] data) {
         delegate.set(this).setBlocks(layer, data);
     }
 
     @Override
-    public char[] load(int layer) {
+    public int[] load(int layer) {
         return getOrCreateGet().load(layer);
     }
 
     @Nullable
     @Override
-    public char[] loadIfPresent(final int layer) {
+    public int[] loadIfPresent(final int layer) {
         if (chunkExisting == null) {
             return null;
         }

@@ -84,26 +84,6 @@ public interface ClipboardFormat {
      * @return true if the given file is of this format
      */
     default boolean isFormat(File file) {
-        try (InputStream stream = Files.newInputStream(file.toPath())) {
-            return isFormat(stream);
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Return whether the given stream is of this format.
-     *
-     * @apiNote The caller is responsible for the following:
-     *     <ul>
-     *         <li>Closing the input stream</li>
-     *     </ul>
-     *
-     * @param inputStream The stream
-     * @return true if the given stream is of this format
-     * @since 2.11.1
-     */
-    default boolean isFormat(InputStream inputStream) {
         return false;
     }
 

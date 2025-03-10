@@ -21,8 +21,10 @@ package com.sk89q.worldedit.extent.clipboard.io;
 
 import com.fastasyncworldedit.core.extent.clipboard.io.FastSchematicReaderV2;
 import com.fastasyncworldedit.core.extent.clipboard.io.FastSchematicReaderV3;
+import com.fastasyncworldedit.core.extent.clipboard.io.FastSchematicReaderV4;
 import com.fastasyncworldedit.core.extent.clipboard.io.FastSchematicWriterV2;
 import com.fastasyncworldedit.core.extent.clipboard.io.FastSchematicWriterV3;
+import com.fastasyncworldedit.core.extent.clipboard.io.FastSchematicWriterV4;
 import com.fastasyncworldedit.core.extent.clipboard.io.schematic.MinecraftStructure;
 import com.fastasyncworldedit.core.extent.clipboard.io.schematic.PNGWriter;
 import com.fastasyncworldedit.core.internal.io.ResettableFileInputStream;
@@ -31,11 +33,13 @@ import com.sk89q.jnbt.NBTConstants;
 import com.sk89q.jnbt.NBTInputStream;
 import com.sk89q.jnbt.NBTOutputStream;
 import com.sk89q.jnbt.NamedTag;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.sponge.SpongeSchematicV1Reader;
 import com.sk89q.worldedit.extent.clipboard.io.sponge.SpongeSchematicV2Reader;
 import com.sk89q.worldedit.extent.clipboard.io.sponge.SpongeSchematicV2Writer;
 import com.sk89q.worldedit.extent.clipboard.io.sponge.SpongeSchematicV3Reader;
 import com.sk89q.worldedit.extent.clipboard.io.sponge.SpongeSchematicV3Writer;
+import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
 import org.anarres.parallelgzip.ParallelGZIPOutputStream;
 import org.enginehub.linbus.stream.LinBinaryIO;
@@ -50,9 +54,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -66,7 +72,7 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
     FAST_V3("fast", "fawe", "schem") {
         @Override
         public ClipboardReader getReader(InputStream inputStream) throws IOException {
-            return new FastSchematicReaderV3(inputStream);
+            return new FastSchematicReaderV4(inputStream);
         }
 
         @Override
@@ -79,12 +85,22 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
                 gzip = new ParallelGZIPOutputStream(outputStream);
             }
             NBTOutputStream nbtStream = new NBTOutputStream(new BufferedOutputStream(gzip));
-            return new FastSchematicWriterV3(nbtStream);
+            return new FastSchematicWriterV4(nbtStream);
         }
 
         @Override
-        public boolean isFormat(final InputStream inputStream) {
-            try (final DataInputStream stream = new DataInputStream(new FastBufferedInputStream(new GZIPInputStream(inputStream)));
+        public boolean isFormat(File file) {
+            String name = file.getName().toLowerCase(Locale.ROOT);
+            if (name.endsWith(".schematic") || name.endsWith(".mcedit") || name.endsWith(".mce")) {
+                return false;
+            }
+            return checkFormatAndUpgrade(file);
+        }
+
+        public boolean checkFormatAndUpgrade(final File file) {
+            AtomicReference<Pair<Integer, Boolean>> pair = new AtomicReference<>();
+            try (final DataInputStream stream = new DataInputStream(new FastBufferedInputStream(new GZIPInputStream(Files.newInputStream(
+                    file.toPath()))));
                  final NBTInputStream nbt = new NBTInputStream(stream)) {
                 if (stream.readByte() != NBTConstants.TYPE_COMPOUND) {
                     return false;
@@ -104,22 +120,40 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
                         return false;
                     }
                     if (type == NBTConstants.TYPE_INT && name.equals("Version")) {
-                        return stream.readInt() == FastSchematicWriterV3.CURRENT_VERSION;
+                        final int version = stream.readInt();
+                        final boolean isOld = version == FastSchematicWriterV4.CURRENT_VERSION;
+                        pair.set(Pair.of(version, isOld));
                     }
                     nbt.readTagPayloadLazy(type, 0);
                 } while (true);
             } catch (IOException ignored) {
             }
-            return false;
-        }
-
-        @Override
-        public boolean isFormat(File file) {
-            String name = file.getName().toLowerCase(Locale.ROOT);
-            if (name.endsWith(".schematic") || name.endsWith(".mcedit") || name.endsWith(".mce")) {
+            final Pair<Integer, Boolean> integerBooleanPair = pair.get();
+            if (integerBooleanPair == null) {
                 return false;
             }
-            return super.isFormat(file);
+            if (integerBooleanPair.right()) {
+                final Integer ver = integerBooleanPair.left();
+                System.out.printf("Starting upgrade FAWE schematic(%s): %s\n", ver, file.getPath());
+                if (ver == FastSchematicWriterV2.CURRENT_VERSION) {
+                    try (final ClipboardReader reader =
+                                 BuiltInClipboardFormat.FAST_V2.getReader(Files.newInputStream(file.toPath()));
+                         final Clipboard read = reader.read()) {
+                        read.save(file, BuiltInClipboardFormat.FAST_V3);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else if (ver == FastSchematicWriterV3.CURRENT_VERSION) {
+                    try (final ClipboardReader reader = new FastSchematicReaderV3(Files.newInputStream(file.toPath()));
+                         final Clipboard read = reader.read()) {
+                        read.save(file, BuiltInClipboardFormat.FAST_V3);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                System.out.println("End upgrade FAWE schematic: " + file.getName());
+            }
+            return true;
         }
 
         @Override
@@ -162,17 +196,17 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
         }
 
         @Override
-        public boolean isFormat(InputStream inputStream) {
-            return detectOldSpongeSchematic(inputStream, FastSchematicWriterV2.CURRENT_VERSION);
-        }
-
-        @Override
         public boolean isFormat(File file) {
             String name = file.getName().toLowerCase(Locale.ROOT);
             if (name.endsWith(".schematic") || name.endsWith(".mcedit") || name.endsWith(".mce")) {
                 return false;
             }
-            return super.isFormat(file);
+
+            try {
+                return detectOldSpongeSchematic(Files.newInputStream(file.toPath()), FastSchematicWriterV2.CURRENT_VERSION);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -211,14 +245,10 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
             if (!name.endsWith(".schematic") && !name.endsWith(".mcedit") && !name.endsWith(".mce")) {
                 return false;
             }
-            return super.isFormat(file);
-        }
 
-        @Override
-        public boolean isFormat(InputStream inputStream) {
             LinRootEntry rootEntry;
             try {
-                DataInputStream stream = new DataInputStream(new GZIPInputStream(inputStream));
+                DataInputStream stream = new DataInputStream(new GZIPInputStream(Files.newInputStream(file.toPath())));
                 rootEntry = LinBinaryIO.readUsing(stream, LinRootEntry::readFrom);
             } catch (Exception e) {
                 return false;
@@ -248,11 +278,6 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
         @Override
         public ClipboardWriter getWriter(OutputStream outputStream) throws IOException {
             throw new IOException("This format does not support saving");
-        }
-
-        @Override
-        public boolean isFormat(InputStream inputStream) {
-            return detectOldSpongeSchematic(inputStream, 1);
         }
 
         @Override
@@ -287,11 +312,6 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
         @Override
         public ClipboardWriter getWriter(OutputStream outputStream) throws IOException {
             return new SpongeSchematicV2Writer(new DataOutputStream(new GZIPOutputStream(outputStream)));
-        }
-
-        @Override
-        public boolean isFormat(InputStream inputStream) {
-            return detectOldSpongeSchematic(inputStream, 2);
         }
 
         @Override
@@ -402,8 +422,13 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
         }
 
         @Override
-        public boolean isFormat(InputStream inputStream) {
-            try (final DataInputStream stream = new DataInputStream(new FastBufferedInputStream(new GZIPInputStream(inputStream)));
+        public boolean isFormat(final File file) {
+            var r1 = file.getName().toLowerCase(Locale.ROOT).endsWith(".nbt");
+            if (!r1) {
+                return false;
+            }
+            try (final DataInputStream stream =
+                         new DataInputStream(new FastBufferedInputStream(new GZIPInputStream(Files.newInputStream(file.toPath()))));
                  final NBTInputStream nbt = new NBTInputStream(stream)) {
                 if (stream.readByte() != NBTConstants.TYPE_COMPOUND) {
                     return false;
@@ -428,11 +453,6 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
             } catch (IOException ignored) {
             }
             return false;
-        }
-
-        @Override
-        public boolean isFormat(final File file) {
-            return file.getName().toLowerCase(Locale.ROOT).endsWith(".nbt") && super.isFormat(file);
         }
 
         @Override

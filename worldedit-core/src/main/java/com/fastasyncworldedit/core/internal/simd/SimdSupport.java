@@ -13,6 +13,7 @@ import com.sk89q.worldedit.internal.util.LogManagerCompat;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypesCache;
+import jdk.incubator.vector.IntVector;
 import jdk.incubator.vector.ShortVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
@@ -46,8 +47,8 @@ public class SimdSupport {
             return null;
         }
         return switch (mask) {
-            case SingleBlockStateMask single -> vectorizedTargetMask(single.getBlockState().getOrdinalChar());
-            case InverseSingleBlockStateMask inverse -> vectorizedTargetMaskInverse(inverse.getBlockState().getOrdinalChar());
+            case SingleBlockStateMask single -> vectorizedTargetMask(single.getBlockState().getOrdinal());
+            case InverseSingleBlockStateMask inverse -> vectorizedTargetMaskInverse(inverse.getBlockState().getOrdinal());
             case ExistingBlockMask ignored -> vectorizedTargetMaskNonAir();
             case InverseMask inverse -> {
                 final VectorizedMask base = vectorizedTargetMask(inverse.inverse());
@@ -65,11 +66,11 @@ public class SimdSupport {
         return (set, get, species) -> get.get(species).compare(VectorOperators.UNSIGNED_GT, BlockTypesCache.ReservedIDs.VOID_AIR);
     }
 
-    private static VectorizedMask vectorizedTargetMask(char ordinal) {
+    private static VectorizedMask vectorizedTargetMask(int ordinal) {
         return (set, get, species) -> get.get(species).compare(VectorOperators.EQ, (short) ordinal);
     }
 
-    private static VectorizedMask vectorizedTargetMaskInverse(char ordinal) {
+    private static VectorizedMask vectorizedTargetMaskInverse(int ordinal) {
         return (set, get, species) -> get.get(species).compare(VectorOperators.NE, (short) ordinal);
     }
 
@@ -80,13 +81,13 @@ public class SimdSupport {
         return switch (pattern) {
             case BaseBlock block -> {
                 if (block.getNbtReference() == null) {
-                    yield new VectorizedPattern<>(block, block.getOrdinalChar());
+                    yield new VectorizedPattern<>(block, block.getOrdinal());
                 }
                 yield null;
             }
             case BlockStateHolder<?> blockStateHolder -> new VectorizedPattern<>(
                     blockStateHolder,
-                    blockStateHolder.getOrdinalChar()
+                    blockStateHolder.getOrdinal()
             );
             default -> null;
         };
@@ -94,9 +95,9 @@ public class SimdSupport {
 
     private static final class VectorizedPattern<T extends Filter> extends DelegateFilter<T> implements VectorizedFilter {
 
-        private final char ordinal;
+        private final int ordinal;
 
-        public VectorizedPattern(final T parent, char ordinal) {
+        public VectorizedPattern(final T parent, int ordinal) {
             super(parent);
             this.ordinal = ordinal;
         }
@@ -107,10 +108,10 @@ public class SimdSupport {
         }
 
         @Override
-        public void applyVector(final VectorFacade get, final VectorFacade set, final VectorMask<Short> mask) {
-            ShortVector s = set.getOrZero(mask.vectorSpecies());
+        public void applyVector(final VectorFacade get, final VectorFacade set, final VectorMask<Integer> mask) {
+            IntVector s = set.getOrZero(mask.vectorSpecies());
             // only change the lanes the mask dictates us to change, keep the rest
-            s = s.blend(ShortVector.broadcast(ShortVector.SPECIES_PREFERRED, ordinal), mask);
+            s = s.blend(IntVector.broadcast(IntVector.SPECIES_PREFERRED, ordinal), mask);
             set.setOrIgnore(s);
         }
 

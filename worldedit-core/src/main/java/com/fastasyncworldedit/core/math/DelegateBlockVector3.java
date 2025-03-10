@@ -320,11 +320,6 @@ public class DelegateBlockVector3 extends BlockVector3 {
     }
 
     @Override
-    public char getOrdinalChar(Extent orDefault) {
-        return parent.getOrdinalChar(orDefault);
-    }
-
-    @Override
     public BlockState getBlock(Extent orDefault) {
         return parent.getBlock(orDefault);
     }

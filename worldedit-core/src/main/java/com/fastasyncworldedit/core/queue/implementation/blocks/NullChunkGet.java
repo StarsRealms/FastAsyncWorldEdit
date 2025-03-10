@@ -143,13 +143,13 @@ public final class NullChunkGet implements IChunkGet {
     }
 
     @Nonnull
-    public char[] load(int layer) {
-        return FaweCache.INSTANCE.EMPTY_CHAR_4096;
+    public int[] load(int layer) {
+        return FaweCache.INSTANCE.EMPTY_INT_4096;
     }
 
     @Nullable
     @Override
-    public char[] loadIfPresent(final int layer) {
+    public int[] loadIfPresent(final int layer) {
         return null;
     }
 

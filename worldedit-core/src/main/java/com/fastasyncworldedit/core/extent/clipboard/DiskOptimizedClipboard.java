@@ -11,12 +11,7 @@ import com.fastasyncworldedit.core.util.MainUtil;
 import com.fastasyncworldedit.core.util.NbtUtils;
 import com.fastasyncworldedit.core.util.ReflectionUtils;
 import com.google.common.collect.Collections2;
-import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.jnbt.DoubleTag;
-import com.sk89q.jnbt.ListTag;
-import com.sk89q.jnbt.NBTInputStream;
-import com.sk89q.jnbt.NBTOutputStream;
-import com.sk89q.jnbt.Tag;
+import com.sk89q.jnbt.*;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.entity.BaseEntity;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
@@ -25,34 +20,19 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.biome.BiomeType;
 import com.sk89q.worldedit.world.biome.BiomeTypes;
-import com.sk89q.worldedit.world.block.BaseBlock;
-import com.sk89q.worldedit.world.block.BlockState;
-import com.sk89q.worldedit.world.block.BlockStateHolder;
-import com.sk89q.worldedit.world.block.BlockTypes;
-import com.sk89q.worldedit.world.block.BlockTypesCache;
+import com.sk89q.worldedit.world.block.*;
 import org.apache.logging.log4j.Logger;
 import org.enginehub.linbus.tree.LinCompoundTag;
 import org.enginehub.linbus.tree.LinTagType;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -62,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DiskOptimizedClipboard extends LinearClipboard {
 
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     private static final Logger LOGGER = LogManagerCompat.getLogger();
     private static final int HEADER_SIZE = 27; // Current header size
     private static final int VERSION_1_HEADER_SIZE = 22; // Header size of "version 1"
@@ -121,10 +101,10 @@ public class DiskOptimizedClipboard extends LinearClipboard {
     public DiskOptimizedClipboard(BlockVector3 dimensions, File file) {
         super(dimensions, BlockVector3.ZERO);
         headerSize = HEADER_SIZE;
-        if (headerSize + ((long) getVolume() << 1) >= Integer.MAX_VALUE) {
+        if (headerSize + ((long) getVolume() << 2) >= Integer.MAX_VALUE) {
             throw new IllegalArgumentException(
                     "Dimensions too large for this clipboard format. Use //lazycopy for large selections.");
-        } else if (headerSize + ((long) getVolume() << 1) + (long) ((getHeight() >> 2) + 1) * ((getLength() >> 2) + 1) * ((getWidth() >> 2) + 1) >= Integer.MAX_VALUE) {
+        } else if (headerSize + ((long) getVolume() << 2) + (long) ((getHeight() >> 2) + 1) * ((getLength() >> 2) + 1) * ((getWidth() >> 2) + 1) >= Integer.MAX_VALUE) {
             LOGGER.error("Dimensions are too large for biomes to be stored in a DiskOptimizedClipboard");
             canHaveBiomes = false;
         }
@@ -143,7 +123,7 @@ public class DiskOptimizedClipboard extends LinearClipboard {
                 e.printStackTrace();
             }
             this.braf = new RandomAccessFile(file, "rw");
-            long fileLength = (long) (getVolume() << 1) + (long) headerSize;
+            long fileLength = (long) (getVolume() << 2) + (long) headerSize;
             braf.setLength(0);
             braf.setLength(fileLength);
             this.nbtBytesRemaining = Integer.MAX_VALUE - (int) fileLength;
@@ -202,7 +182,7 @@ public class DiskOptimizedClipboard extends LinearClipboard {
                 if (Settings.settings().CLIPBOARD.SAVE_CLIPBOARD_NBT_TO_DISK && (nbtCount + entitiesCount > 0)) {
                     loadNBTFromFileFooter(nbtCount, entitiesCount, biomeLength);
                 }
-            } else if (canHaveBiomes && braf.length() - headerSize == ((long) getVolume() << 1) + biomeLength) {
+            } else if (canHaveBiomes && braf.length() - headerSize == ((long) getVolume() << 2) + biomeLength) {
                 hasBiomes = true;
             }
             getAndSetOffsetAndOrigin();
@@ -228,7 +208,10 @@ public class DiskOptimizedClipboard extends LinearClipboard {
             doc = new DiskOptimizedClipboard(file);
         } catch (FaweClipboardVersionMismatchException e) { // Attempt to recover
             int version = e.getClipboardVersion();
-            doc = new DiskOptimizedClipboard(file, version);
+            if (version == 2){
+                throw e;
+            }
+            doc = null;
         }
         return doc;
     }
@@ -248,7 +231,7 @@ public class DiskOptimizedClipboard extends LinearClipboard {
     }
 
     private void loadNBTFromFileFooter(int nbtCount, int entitiesCount, long biomeLength) throws IOException {
-        int biomeBlocksLength = headerSize + (getVolume() << 1) + (hasBiomes ? (int) biomeLength : 0);
+        int biomeBlocksLength = headerSize + (getVolume() << 2) + (hasBiomes ? (int) biomeLength : 0);
         MappedByteBuffer tmp = fileChannel.map(FileChannel.MapMode.READ_ONLY, biomeBlocksLength, braf.length());
         try (NBTInputStream nbtIS = new NBTInputStream(MainUtil.getCompressedIS(new ByteBufferInputStream(tmp)))) {
             Iterator<CompoundTag> iter = nbtIS.toIterator();
@@ -345,7 +328,7 @@ public class DiskOptimizedClipboard extends LinearClipboard {
                 // Since biomes represent a 4x4x4 cube, we store fewer biome bytes that volume at 1 byte per biome
                 // +1 to each to allow for cubes that lie across the region boundary
                 long length =
-                        headerSize + ((long) getVolume() << 1) + (long) ((getHeight() >> 2) + 1) * ((getLength() >> 2) + 1) * ((getWidth() >> 2) + 1);
+                        headerSize + ((long) getVolume() << 2) + (long) ((getHeight() >> 2) + 1) * ((getLength() >> 2) + 1) * ((getWidth() >> 2) + 1);
                 this.braf.setLength(length);
                 this.nbtBytesRemaining = Integer.MAX_VALUE - (int) length;
                 init();
@@ -377,7 +360,7 @@ public class DiskOptimizedClipboard extends LinearClipboard {
     public void setBiome(int index, BiomeType biome) {
         if (initBiome()) {
             try {
-                byteBuffer.put(headerSize + (getVolume() << 1) + index, (byte) biome.getInternalId());
+                byteBuffer.put(headerSize + (getVolume() << 2) + index, (byte) biome.getInternalId());
             } catch (IndexOutOfBoundsException e) {
                 LOGGER.info((long) (getHeight() >> 2) * (getLength() >> 2) * (getWidth() >> 2));
                 LOGGER.info(index);
@@ -391,7 +374,7 @@ public class DiskOptimizedClipboard extends LinearClipboard {
         if (!hasBiomes()) {
             return null;
         }
-        int biomeId = byteBuffer.get(headerSize + (getVolume() << 1) + index) & 0xFF;
+        int biomeId = byteBuffer.get(headerSize + (getVolume() << 2) + index) & 0xFF;
         return BiomeTypes.get(biomeId);
     }
 
@@ -400,7 +383,7 @@ public class DiskOptimizedClipboard extends LinearClipboard {
         if (!hasBiomes()) {
             return;
         }
-        int mbbIndex = headerSize + (getVolume() << 1);
+        int mbbIndex = headerSize + (getVolume() << 2);
         try {
             for (int y = 0; y < getHeight(); y++) {
                 for (int z = 0; z < getLength(); z++) {
@@ -700,8 +683,8 @@ public class DiskOptimizedClipboard extends LinearClipboard {
     @Override
     public BlockState getBlock(int index) {
         try {
-            int diskIndex = headerSize + (index << 1);
-            char ordinal = byteBuffer.getChar(diskIndex);
+            int diskIndex = headerSize + (index << 2);
+            int ordinal = byteBuffer.getInt(diskIndex);
             return BlockState.getFromOrdinal(ordinal);
         } catch (IndexOutOfBoundsException ignored) {
         }
@@ -722,12 +705,12 @@ public class DiskOptimizedClipboard extends LinearClipboard {
     @Override
     public <B extends BlockStateHolder<B>> boolean setBlock(int x, int y, int z, B block) {
         try {
-            int index = headerSize + (getIndex(x, y, z) << 1);
-            char ordinal = block.getOrdinalChar();
+            int index = headerSize + (getIndex(x, y, z) << 2);
+            int ordinal = block.getOrdinal();
             if (ordinal == BlockTypesCache.ReservedIDs.__RESERVED__) {
                 ordinal = BlockTypesCache.ReservedIDs.AIR;
             }
-            byteBuffer.putChar(index, ordinal);
+            byteBuffer.putInt(index, ordinal);
             boolean hasNbt = block instanceof BaseBlock && block.hasNbtData();
             if (hasNbt) {
                 setTile(x, y, z, block.getNbtData());
@@ -742,9 +725,9 @@ public class DiskOptimizedClipboard extends LinearClipboard {
     @Override
     public <B extends BlockStateHolder<B>> boolean setBlock(int i, B block) {
         try {
-            char ordinal = block.getOrdinalChar();
-            int index = headerSize + (i << 1);
-            byteBuffer.putChar(index, ordinal);
+            int ordinal = block.getOrdinal();
+            int index = headerSize + (i << 2);
+            byteBuffer.putInt(index, ordinal);
             boolean hasNbt = block instanceof BaseBlock && block.hasNbtData();
             if (hasNbt) {
                 int y = i / getArea();

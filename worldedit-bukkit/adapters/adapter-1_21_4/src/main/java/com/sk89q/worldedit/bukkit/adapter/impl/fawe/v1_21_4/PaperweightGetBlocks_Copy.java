@@ -46,7 +46,7 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
 
     private final Map<BlockVector3, FaweCompoundTag> tiles = new HashMap<>();
     private final Set<FaweCompoundTag> entities = new HashSet<>();
-    private final char[][] blocks;
+    private final int[][] blocks;
     private final int minHeight;
     private final int maxHeight;
     private final int chunkX;
@@ -60,7 +60,7 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
         this.serverLevel = levelChunk.level;
         this.minHeight = serverLevel.getMinY();
         this.maxHeight = serverLevel.getMaxY() - 1; // Minecraft max limit is exclusive.
-        this.blocks = new char[getSectionCount()][];
+        this.blocks = new int[getSectionCount()][];
         this.chunkX = levelChunk.getPos().x;
         this.chunkZ = levelChunk.getPos().z;
     }
@@ -185,7 +185,7 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
         return serverLevel.getSectionsCount();
     }
 
-    protected void storeSection(int layer, char[] data) {
+    protected void storeSection(int layer, int[] data) {
         blocks[layer] = data;
     }
 
@@ -232,17 +232,17 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
     }
 
     @Override
-    public char[] load(int layer) {
+    public int[] load(int layer) {
         layer -= getMinSectionPosition();
         if (blocks[layer] == null) {
-            blocks[layer] = new char[4096];
-            Arrays.fill(blocks[layer], (char) BlockTypesCache.ReservedIDs.AIR);
+            blocks[layer] = new int[4096];
+            Arrays.fill(blocks[layer], BlockTypesCache.ReservedIDs.AIR);
         }
         return blocks[layer];
     }
 
     @Override
-    public char[] loadIfPresent(int layer) {
+    public int[] loadIfPresent(int layer) {
         layer -= getMinSectionPosition();
         return blocks[layer];
     }
@@ -282,7 +282,7 @@ public class PaperweightGetBlocks_Copy implements IChunkGet {
         return null;
     }
 
-    public char get(int x, int y, int z) {
+    public int get(int x, int y, int z) {
         final int layer = (y >> 4) - getMinSectionPosition();
         final int index = (y & 15) << 8 | z << 4 | x;
         return blocks[layer][index];

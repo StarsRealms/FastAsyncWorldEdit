@@ -193,7 +193,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
             BlockState blockState = BlockTypesCache.states[i];
             PaperweightBlockMaterial material = (PaperweightBlockMaterial) blockState.getMaterial();
             int id = Block.BLOCK_STATE_REGISTRY.getId(material.getState());
-            char ordinal = blockState.getOrdinalChar();
+            int ordinal = blockState.getOrdinal();
             ibdToOrdinal[id] = ordinal;
             ordinalToIbdID[ordinal] = id;
         }
@@ -371,18 +371,18 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         return BlockTypesCache.states[adaptToChar(blockState)];
     }
 
-    public char adaptToChar(net.minecraft.world.level.block.state.BlockState blockState) {
+    public int adaptToChar(net.minecraft.world.level.block.state.BlockState blockState) {
         int id = Block.BLOCK_STATE_REGISTRY.getId(blockState);
         if (initialised) {
-            return (char) ibdToOrdinal[id];
+            return ibdToOrdinal[id];
         }
         synchronized (this) {
             if (initialised) {
-                return (char) ibdToOrdinal[id];
+                return ibdToOrdinal[id];
             }
             try {
                 init();
-                return (char) ibdToOrdinal[id];
+                return ibdToOrdinal[id];
             } catch (ArrayIndexOutOfBoundsException e1) {
                 LOGGER.error("Attempted to convert {} with ID {} to char. ibdToOrdinal length: {}. Defaulting to air!",
                         blockState.getBlock(), Block.BLOCK_STATE_REGISTRY.getId(blockState), ibdToOrdinal.length, e1
@@ -392,16 +392,16 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         }
     }
 
-    public char ibdIDToOrdinal(int id) {
+    public int ibdIDToOrdinal(int id) {
         if (initialised) {
-            return (char) ibdToOrdinal[id];
+            return ibdToOrdinal[id];
         }
         synchronized (this) {
             if (initialised) {
-                return (char) ibdToOrdinal[id];
+                return ibdToOrdinal[id];
             }
             init();
-            return (char) ibdToOrdinal[id];
+            return ibdToOrdinal[id];
         }
     }
 
@@ -419,7 +419,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         }
     }
 
-    public int ordinalToIbdID(char ordinal) {
+    public int ordinalToIbdID(int ordinal) {
         if (initialised) {
             return ordinalToIbdID[ordinal];
         }

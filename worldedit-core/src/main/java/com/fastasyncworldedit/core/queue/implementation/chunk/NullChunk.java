@@ -147,7 +147,7 @@ public final class NullChunk implements IQueueChunk {
         return false;
     }
 
-    public void setBlocks(int layer, @Nonnull char[] data) {
+    public void setBlocks(int layer, @Nonnull int[] data) {
     }
 
     @Nullable
@@ -186,13 +186,13 @@ public final class NullChunk implements IQueueChunk {
 
 
     @Nullable
-    public char[] load(int layer) {
+    public int[] load(int layer) {
         return null;
     }
 
     @Nullable
     @Override
-    public char[] loadIfPresent(final int layer) {
+    public int[] loadIfPresent(final int layer) {
         return null;
     }
 
