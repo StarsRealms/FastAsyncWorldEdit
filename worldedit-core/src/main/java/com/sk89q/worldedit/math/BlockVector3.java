@@ -836,6 +836,11 @@ public abstract class BlockVector3 {
         return getBlock(orDefault).getOrdinal();
     }
 
+    @Deprecated
+    public char getOrdinalChar(Extent orDefault) {
+        return orDefault.getBlock(this).getOrdinalChar();
+    }
+
     public BlockState getBlock(Extent orDefault) {
         return orDefault.getBlock(this);
     }

@@ -139,6 +139,7 @@ public class FastSchematicWriterV3 implements ClipboardWriter {
                         return block.toImmutableState();
                     },
                     block -> {
+                        //noinspection deprecation
                         char ordinal = block.getOrdinalChar();
                         if (ordinal == BlockTypesCache.ReservedIDs.__RESERVED__) {
                             ordinal = BlockTypesCache.ReservedIDs.AIR;

@@ -477,6 +477,7 @@ public class BlockState implements BlockStateHolder<BlockState>, Pattern {
         return this.ordinal;
     }
 
+    @Deprecated
     @Override
     public final char getOrdinalChar() {
         return this.ordinalChar;

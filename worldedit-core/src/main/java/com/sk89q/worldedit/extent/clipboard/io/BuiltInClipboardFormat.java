@@ -44,7 +44,6 @@ import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
 import org.anarres.parallelgzip.ParallelGZIPOutputStream;
 import org.enginehub.linbus.stream.LinBinaryIO;
 import org.enginehub.linbus.stream.LinReadOptions;
-import org.enginehub.linbus.tree.LinCompoundTag;
 import org.enginehub.linbus.tree.LinRootEntry;
 
 import java.io.BufferedInputStream;
@@ -250,7 +249,7 @@ public enum BuiltInClipboardFormat implements ClipboardFormat {
 
             LinRootEntry rootEntry;
             try {
-                DataInputStream stream = new DataInputStream(new GZIPInputStream(inputStream));
+                DataInputStream stream = new DataInputStream(new GZIPInputStream(Files.newInputStream(file.toPath())));
                 rootEntry = LinBinaryIO.readUsing(stream, LEGACY_OPTIONS, LinRootEntry::readFrom);
             } catch (Exception e) {
                 return false;

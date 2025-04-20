@@ -216,6 +216,7 @@ public class BaseBlock implements BlockStateHolder<BaseBlock>, TileEntityBlock {
         return blockState.getOrdinal();
     }
 
+    @Deprecated
     @Override
     public final char getOrdinalChar() {
         return blockState.getOrdinalChar();

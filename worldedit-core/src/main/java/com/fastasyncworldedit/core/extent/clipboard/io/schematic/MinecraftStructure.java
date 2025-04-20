@@ -51,6 +51,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+@SuppressWarnings("deprecation")
 public class MinecraftStructure implements ClipboardReader, ClipboardWriter {
 
     private static final Logger LOGGER = LogManagerCompat.getLogger();
