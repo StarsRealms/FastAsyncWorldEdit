@@ -350,8 +350,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
         }
         if (layer > minLayer) {
             final int newLayer = layer - 1;
-            final IntGetBlocks chunk = this.get;
-            return states[chunk.sections[newLayer].get(chunk, newLayer, index + 3840)];
+            return states[get.get(newLayer, index + 3840)];
         }
         return BlockTypes.__RESERVED__.getDefaultState();
     }
@@ -363,8 +362,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
         }
         if (layer < maxLayer) {
             final int newLayer = layer + 1;
-            final IntGetBlocks chunk = this.get;
-            return states[chunk.sections[newLayer].get(chunk, newLayer, index - 3840)];
+            return states[get.get(newLayer, index - 3840)];
         }
         return BlockTypes.__RESERVED__.getDefaultState();
     }
@@ -378,7 +376,7 @@ public class CharFilterBlock extends ChunkFilterBlock {
         } else if ((layerAdd > 0 && layerAdd < (maxLayer - layer)) || (layerAdd < 0 && layerAdd < (minLayer - layer))) {
             final int newLayer = layer + layerAdd;
             final int index = (this.index + ((y & 15) << 8)) & 4095;
-            return states[get.sections[newLayer].get(get, newLayer, index)];
+            return states[get.get(newLayer, index)];
         }
         return BlockTypes.__RESERVED__.getDefaultState();
     }

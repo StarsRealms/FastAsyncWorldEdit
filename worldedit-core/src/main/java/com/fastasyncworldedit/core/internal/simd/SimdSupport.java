@@ -17,11 +17,13 @@ import jdk.incubator.vector.IntVector;
 import jdk.incubator.vector.ShortVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 
 public class SimdSupport {
 
+    private static final Logger LOGGER = LogManagerCompat.getLogger();
     private static final boolean VECTOR_API_PRESENT;
 
     static {
@@ -33,8 +35,16 @@ public class SimdSupport {
         }
         VECTOR_API_PRESENT = vectorApiPresent;
         if (!VECTOR_API_PRESENT && Settings.settings().EXPERIMENTAL.USE_VECTOR_API) {
-            LogManagerCompat.getLogger()
-                    .warn("FAWE use-vector-api is enabled but --add-modules=jdk.incubator.vector is not set.");
+            LOGGER.warn("""
+                    FAWE use-vector-api is enabled but --add-modules=jdk.incubator.vector is not set.
+                    Vector instructions will not be used.
+                    """);
+        } else if (VECTOR_API_PRESENT && !Settings.settings().EXPERIMENTAL.USE_VECTOR_API) {
+            LOGGER.warn("""
+                    The server is running with the --add-modules=jdk.incubator.vector option.
+                    FAWE can use vector instructions, but it is disabled in the config.
+                    Enable use-vector-api to benefit from vector instructions with FAWE.\
+                    """);
         }
     }
 
