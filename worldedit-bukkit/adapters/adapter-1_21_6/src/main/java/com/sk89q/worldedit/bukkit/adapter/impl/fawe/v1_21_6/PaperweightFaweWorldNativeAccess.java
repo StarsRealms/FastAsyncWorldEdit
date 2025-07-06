@@ -81,7 +81,7 @@ public class PaperweightFaweWorldNativeAccess implements WorldNativeAccess<Level
 
     @Override
     public net.minecraft.world.level.block.state.BlockState toNative(BlockState blockState) {
-        int stateId = paperweightFaweAdapter.ordinalToIbdID(blockState.getOrdinalChar());
+        int stateId = paperweightFaweAdapter.ordinalToIbdID(blockState.getOrdinal());
         return BlockStateIdAccess.isValidInternalId(stateId)
                 ? Block.stateById(stateId)
                 : ((CraftBlockData) BukkitAdapter.adapt(blockState)).getState();
