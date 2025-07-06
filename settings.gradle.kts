@@ -2,7 +2,7 @@ rootProject.name = "FastAsyncWorldEdit"
 
 include("worldedit-libs")
 
-listOf("1_21_5").forEach {
+listOf("1_21_6").forEach {
     include("worldedit-bukkit:adapters:adapter-$it")
 }
 
