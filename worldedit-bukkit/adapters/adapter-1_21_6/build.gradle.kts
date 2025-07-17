@@ -1,10 +1,28 @@
 import io.papermc.paperweight.userdev.PaperweightUserDependenciesExtension
+import io.papermc.paperweight.userdev.PaperweightUserExtension
+import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
 
 plugins {
     java
 }
 
-applyPaperweightAdapterConfiguration()
+applyCommonConfiguration()
+apply(plugin = "java-library")
+applyCommonJavaConfiguration(
+        sourcesJar = true,
+        banSlf4j = false,
+)
+apply(plugin = "io.papermc.paperweight.userdev")
+
+dependencies {
+    "implementation"(project(":worldedit-bukkit"))
+}
+
+tasks.named("javadoc") {
+    enabled = false
+}
+extensions.getByType<PaperweightUserExtension>().reobfArtifactConfiguration = ReobfArtifactConfiguration.MOJANG_PRODUCTION
+
 
 repositories {
     gradlePluginPortal()
