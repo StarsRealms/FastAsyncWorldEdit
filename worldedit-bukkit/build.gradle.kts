@@ -1,6 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.papermc.paperweight.userdev.attribute.Obfuscation
-import me.modmuss50.mpp.ReleaseType
 
 plugins {
     `java-library`
@@ -64,17 +63,6 @@ val adapters = configurations.create("adapters") {
     attributes {
         attribute(Obfuscation.OBFUSCATION_ATTRIBUTE, objects.named(Obfuscation.NONE))
     }
-}
-
-val adaptersReobf = configurations.create("adaptersReobf") {
-    description = "Adapters to include in the JAR (Spigot-Mapped)"
-    isCanBeConsumed = false
-    isCanBeResolved = true
-    shouldResolveConsistentlyWith(configurations["runtimeClasspath"])
-    attributes {
-        attribute(Obfuscation.OBFUSCATION_ATTRIBUTE, objects.named(Obfuscation.OBFUSCATED))
-    }
-    extendsFrom(adapters)
 }
 
 dependencies {
@@ -158,25 +146,6 @@ tasks.named<Jar>("jar") {
 
 addJarManifest(WorldEditKind.Plugin, includeClasspath = true)
 
-tasks.register<ShadowJar>("reobfShadowJar") {
-    archiveFileName.set("${rootProject.name}-Bukkit-${project.version}.${archiveExtension.getOrElse("jar")}")
-    configurations = listOf(
-        project.configurations.runtimeClasspath.get(), // as is done by shadow for the default shadowJar
-        adaptersReobf
-    )
-
-    // as is done by shadow for the default shadowJar
-    from(sourceSets.main.map { it.output })
-    manifest.inheritFrom(tasks.jar.get().manifest)
-    exclude("META-INF/INDEX.LIST", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "module-info.class")
-
-    manifest {
-        attributes(
-            "FAWE-Plugin-Jar-Type" to "spigot"
-        )
-    }
-}
-
 tasks.named<ShadowJar>("shadowJar") {
     archiveFileName.set("${rootProject.name}-Paper-${project.version}.${archiveExtension.getOrElse("jar")}")
     configurations.add(adapters)
@@ -244,51 +213,4 @@ tasks.withType<ShadowJar>().configureEach {
 
 tasks.named("assemble").configure {
     dependsOn("shadowJar")
-    dependsOn("reobfShadowJar")
-}
-
-publishMods {
-    displayName.set("${project.version}")
-    version.set("${project.version}")
-    type.set(ReleaseType.STABLE)
-    changelog.set("The changelog is available on GitHub: https://github.com/IntellectualSites/" +
-            "FastAsyncWorldEdit/releases/tag/${project.version}")
-
-    val common = modrinthOptions {
-        accessToken.set(System.getenv("MODRINTH_TOKEN"))
-        projectId.set("z4HZZnLr")
-        projectDescription.set(rootProject.file("README.md").readText())
-    }
-
-    // We publish the reobfJar twice to ensure that the modrinth download menu picks the right jar for the platform regardless
-    // of minecraft version.
-
-    val mojmapPaperVersions = listOf("1.20.6", "1.21.1", "1.21.4")
-    val spigotMappedPaperVersions = listOf("1.20.2", "1.20.4")
-
-    // Mark reobfJar as spigot only for 1.20.5+
-    modrinth("spigot") {
-        from(common)
-        file.set(tasks.named<ShadowJar>("reobfShadowJar").flatMap { it.archiveFile })
-        minecraftVersions.set(mojmapPaperVersions)
-        modLoaders.set(listOf("spigot"))
-    }
-
-    // Mark reobfJar as spigot & paper for <1.20.5
-    modrinth("spigotAndOldPaper") {
-        from(common)
-        file.set(tasks.named<ShadowJar>("reobfShadowJar").flatMap { it.archiveFile })
-        minecraftVersions.set(spigotMappedPaperVersions)
-        modLoaders.set(listOf("paper", "spigot"))
-    }
-
-    // Mark mojang mapped jar as paper 1.20.5+ only
-    modrinth {
-        from(common)
-        file.set(tasks.named<ShadowJar>("shadowJar").flatMap { it.archiveFile })
-        minecraftVersions.set(mojmapPaperVersions)
-        modLoaders.set(listOf("paper"))
-    }
-
-    // dryRun.set(true) // For testing
 }

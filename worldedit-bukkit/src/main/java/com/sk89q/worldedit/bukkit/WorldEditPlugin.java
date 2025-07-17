@@ -21,8 +21,8 @@ package com.sk89q.worldedit.bukkit;
 
 import com.fastasyncworldedit.bukkit.BukkitPermissionAttachmentManager;
 import com.fastasyncworldedit.bukkit.FaweBukkit;
-import com.fastasyncworldedit.core.util.UpdateNotification;
 import com.fastasyncworldedit.core.Fawe;
+import com.fastasyncworldedit.core.util.UpdateNotification;
 import com.fastasyncworldedit.core.util.WEManager;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -259,9 +259,9 @@ public class WorldEditPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new AsyncTabCompleteListener(), this);
         }
 
+        setupPreWorldData();
         initializeRegistries(); // this creates the objects matching Bukkit's enums - but doesn't fill them with data yet
         if (Bukkit.getWorlds().isEmpty()) {
-            setupPreWorldData();
             // register this so we can load world-dependent data right as the first world is loading
             getServer().getPluginManager().registerEvents(new WorldInitListener(), this);
         } else {
@@ -271,7 +271,6 @@ public class WorldEditPlugin extends JavaPlugin {
             LOGGER.warn("For more information why reloading is bad, see https://madelinemiller.dev/blog/problem-with-reload/");
             //FAWE end
             try {
-                setupPreWorldData();
                 // since worlds are loaded already, we can do this now
                 setupWorldData();
             } catch (Throwable ignored) {

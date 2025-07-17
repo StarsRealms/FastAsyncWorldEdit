@@ -121,7 +121,7 @@ fun Project.applyLibrariesConfiguration() {
     }
 
     tasks.named("assemble").configure {
-        dependsOn("jar", "sourcesJar", "javadocJar")
+        dependsOn("jar", "sourcesJar")
     }
 
     project.apply<LibsConfigPluginHack>()
