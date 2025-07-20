@@ -22,7 +22,6 @@ package com.sk89q.worldedit.bukkit;
 import com.fastasyncworldedit.bukkit.BukkitPermissionAttachmentManager;
 import com.fastasyncworldedit.bukkit.FaweBukkit;
 import com.fastasyncworldedit.core.Fawe;
-import com.fastasyncworldedit.core.util.UpdateNotification;
 import com.fastasyncworldedit.core.util.WEManager;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -80,7 +79,6 @@ import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.enginehub.piston.CommandManager;
-import org.incendo.serverlib.ServerLib;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -282,10 +280,10 @@ public class WorldEditPlugin extends JavaPlugin {
         // First introduced in build 349, release 2.5.2
         m.addCustomChart(new SimplePie("residence", ()
                 -> WEManager.weManager().getManagers().toString().contains("residence") ? "Yes" : "No"));
-        // Check if we are in a safe environment
-        ServerLib.checkUnsafeForks();
-        // Check if a new build is available
-        UpdateNotification.doUpdateCheck();
+//        // Check if we are in a safe environment
+//        ServerLib.checkUnsafeForks();
+//        // Check if a new build is available
+//        UpdateNotification.doUpdateCheck();
     }
 
     private void setupPreWorldData() {

@@ -252,6 +252,11 @@ public class TestOfflinePermissible implements OfflinePlayer, Permissible {
     }
 
     @Override
+    public @org.jspecify.annotations.Nullable Location getRespawnLocation(final boolean b) {
+        return null;
+    }
+
+    @Override
     public void incrementStatistic(@Nonnull Statistic statistic) throws IllegalArgumentException {
 
     }

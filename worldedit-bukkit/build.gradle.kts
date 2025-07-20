@@ -119,8 +119,8 @@ dependencies {
     api(libs.parallelgzip) { isTransitive = false }
     compileOnly(libs.adventureApi)
     compileOnlyApi(libs.checkerqual)
-    compileOnly("com.starsrealm.starock:api:1.6.4-20250104.111013-2")
-    compileOnly("com.starsrealm.starock:plugin:1.6.4-20250104.111013-2")
+    compileOnly("com.starsrealms.starock:api:1.7.1-20250715.033921-1")
+    compileOnly("com.starsrealms.starock:plugin:1.7.1-20250715.033921-1")
 
     // Tests
     testImplementation(libs.mockito)
